@@ -1822,7 +1822,9 @@ struct llama_model_loader {
             /*.ctx      = */ &ctx_meta,
         };
 
+        printf("*********start model loading******\n");
         ctx_gguf = gguf_init_from_file(fname.c_str(), params);
+        printf("*********finish model loading******\n");
         if (!ctx_gguf) {
             throw std::runtime_error(format("%s: failed to load model from %s\n", __func__, fname.c_str()));
         }
@@ -3986,7 +3988,8 @@ struct llm_build_context {
             llm_build_k_shift(ctx0, hparams, cparams, kv_self, gf, LLM_ROPE, n_ctx, n_embd_head, freq_base, freq_scale, cb);
         }
 
-        for (int il = 0; il < n_layer; ++il) {
+        // for (int il = 0; il < n_layer; ++il) {
+        for (int il = 0; il < 1; ++il) {
             struct ggml_tensor * inpSA = inpL;
 
             // norm
@@ -5664,6 +5667,7 @@ static struct ggml_cgraph * llama_build_graph(
 static int llama_decode_internal(
          llama_context & lctx,
            llama_batch   batch) {
+    printf("Entering decode internal\n");
     const uint32_t n_tokens = batch.n_tokens;
 
     if (n_tokens == 0) {
@@ -5751,9 +5755,12 @@ static int llama_decode_internal(
 
     ggml_allocr_reset(lctx.alloc);
 
+    printf("[INFO] start build graph\n");
     ggml_cgraph * gf = llama_build_graph(lctx, batch);
+    printf("[INFO] finish build graph\n");
 
     ggml_allocr_alloc_graph(lctx.alloc, gf);
+    printf("[INFO] finish alloc graph\n");
 
     struct ggml_tensor * res        = gf->nodes[gf->n_nodes - 1];
     struct ggml_tensor * embeddings = gf->nodes[gf->n_nodes - 2];
@@ -5807,13 +5814,19 @@ static int llama_decode_internal(
 #endif
 
 #ifdef GGML_USE_METAL
+    printf("[INFO] start graph compute\n");
     if (lctx.ctx_metal) {
+        printf("[INFO] ctx metal\n");
         ggml_metal_set_n_cb     (lctx.ctx_metal, n_threads);
+        printf("[INFO] metal graph compute\n");
         ggml_metal_graph_compute(lctx.ctx_metal, gf);
     } else {
+        printf("[INFO] else\n");
         ggml_graph_compute_helper(lctx.work_buffer, gf, n_threads);
     }
+    printf("[INFO] finish graph compute\n");
 #else
+    printf("[INFO] no metal\n");
     ggml_graph_compute_helper(lctx.work_buffer, gf, n_threads);
 #endif
 
@@ -8927,6 +8940,7 @@ struct llama_context * llama_new_context_with_model(
     }
 #endif
 
+    printf("exit new_context_with_model\n");
     return ctx;
 }
 

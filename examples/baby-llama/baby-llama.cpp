@@ -1520,7 +1520,7 @@ int main(int argc, char ** argv) {
     size_t    compute_size = 1024ll*1024ll*1024ll;
     uint8_t * compute_addr = new uint8_t[compute_size];
 
-    int n_examples = 256;
+    int n_examples = 1;
     int n_tokens = model.hparams.n_ctx;
     int n_vocab  = model.hparams.n_vocab;
 
@@ -1540,18 +1540,25 @@ int main(int argc, char ** argv) {
         struct ggml_tensor * tokens_input            = ggml_new_tensor_2d(ctx0, GGML_TYPE_I32, n_tokens, n_batch);
         struct ggml_tensor * targets                 = ggml_new_tensor_3d(ctx0, GGML_TYPE_F32, n_vocab, n_tokens, n_batch);
 
+        printf("finished new tensor\n");
+
         int n_past = 0;
 
         ggml_cgraph gf = {};
 
         get_example_targets_batch(ctx0, 64*ex+0,  tokens_input, targets);
 
+        printf("finishted get example targets batch\n");
+
         struct ggml_tensor * logits = forward_batch(&model, &kv_self, ctx0, &gf, tokens_input, n_tokens, n_past, n_batch);
+        printf("finished forward batch\n");
         // struct ggml_tensor * e = cross_entropy_loss(ctx0, targets, logits);
         struct ggml_tensor * e = square_error_loss(ctx0, targets, logits);
 
         ggml_build_forward_expand(&gf, e);
         ggml_graph_compute_helper(work_buffer, &gf, /*n_threads*/ 1);
+
+        printf("finished ggml_graph_compute_helper\n");
 
         float error_before_opt = ggml_get_f32_1d(e, 0);
 
@@ -1582,6 +1589,8 @@ int main(int argc, char ** argv) {
 
         ggml_free(ctx0);
     }
+
+    printf("end example\n");
 
     {
         int n_gen = 128;

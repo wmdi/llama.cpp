@@ -593,6 +593,7 @@ bool ggml_metal_add_buffer(
 #endif
     }
 
+    printf("exit ggml_metal_add_buffer\n");
     return true;
 }
 

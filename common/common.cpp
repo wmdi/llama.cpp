@@ -960,14 +960,20 @@ std::tuple<struct llama_model *, struct llama_context *> llama_init_from_gpt_par
 
     auto cparams = llama_context_params_from_gpt_params(params);
 
+    printf("[INFO] finish llama_context_params_from_gpt_params\n");
+
     llama_context * lctx = llama_new_context_with_model(model, cparams);
+    printf("[INFO] finish llama_new_context_with_model\n");
     if (lctx == NULL) {
         fprintf(stderr, "%s: error: failed to create context with model '%s'\n", __func__, params.model.c_str());
         llama_free_model(model);
         return std::make_tuple(nullptr, nullptr);
     }
 
+    printf("[INFO] finish free model\n");
+
     for (unsigned int i = 0; i < params.lora_adapter.size(); ++i) {
+        assert(false);
         const std::string& lora_adapter = std::get<0>(params.lora_adapter[i]);
         float lora_scale = std::get<1>(params.lora_adapter[i]);
         int err = llama_model_apply_lora_from_file(model,
@@ -991,10 +997,14 @@ std::tuple<struct llama_model *, struct llama_context *> llama_init_from_gpt_par
 
     {
         LOG("warming up the model with an empty run\n");
+        printf("[INFO] warm up\n");
 
         std::vector<llama_token> tmp = { llama_token_bos(model), llama_token_eos(model), };
+        printf("[INFO] decode\n");
         llama_decode(lctx, llama_batch_get_one(tmp.data(), std::min(tmp.size(), (size_t) params.n_batch), 0, 0));
+        printf("[INFO] kv cache clear\n");
         llama_kv_cache_clear(lctx);
+        printf("[INFO] reset timings\n");
         llama_reset_timings(lctx);
     }
 

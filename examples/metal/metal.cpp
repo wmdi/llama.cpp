@@ -46,9 +46,11 @@ int main(int argc, char ** argv) {
 
     // main
     {
+        printf("metal: get input tensor\n");
         struct ggml_tensor * input = ggml_graph_get_tensor(gf, "embd");
         *(int32_t *) input->data = 1; // BOS
 
+        printf("metal: get metal set tensor\n");
         ggml_metal_set_tensor(ctx_metal, input);
 
         // warmup

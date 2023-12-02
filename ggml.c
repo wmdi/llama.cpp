@@ -18092,6 +18092,27 @@ static bool gguf_fread_str(FILE * file, struct gguf_str * p, size_t * offset) {
     return ok;
 }
 
+static bool gguf_fread_el_dummy(FILE * file, void * dst, size_t size, size_t * offset) {
+    // const size_t n = fread(dst, 1, size, file);
+    fseek(file, size, SEEK_CUR);
+    *offset += size;
+    // return n == size;
+    return true;
+}
+
+static bool gguf_fread_str_dummy(FILE * file, struct gguf_str * p, size_t * offset) {
+    p->n    = 0;
+    p->data = NULL;
+
+    bool ok = true;
+
+    ok = ok && gguf_fread_el(file, &p->n,    sizeof(p->n), offset); p->data = calloc(p->n + 1, 1);
+    printf("[INFO from project] string length: %llu\n", p->n);
+    ok = ok && gguf_fread_el(file,  p->data, p->n,         offset);
+
+    return ok;
+}
+
 struct gguf_context * gguf_init_empty(void) {
     struct gguf_context * ctx = GGML_ALIGNED_MALLOC(sizeof(struct gguf_context));
 
@@ -18114,6 +18135,9 @@ struct gguf_context * gguf_init_empty(void) {
 
 struct gguf_context * gguf_init_from_file(const char * fname, struct gguf_init_params params) {
     FILE * file = fopen(fname, "rb");
+
+    printf("[INFO from project] filename: %s\n", fname);
+
     if (!file) {
         return NULL;
     }
@@ -18129,8 +18153,8 @@ struct gguf_context * gguf_init_from_file(const char * fname, struct gguf_init_p
 
         for (uint32_t i = 0; i < sizeof(magic); i++) {
             if (magic[i] != GGUF_MAGIC[i]) {
-                fprintf(stderr, "%s: invalid magic characters %s.\n", __func__, magic);
-                fclose(file);
+                // fprintf(stderr, "%s: invalid magic characters %s.\n", __func__, magic);
+                // fclose(file);
                 return NULL;
             }
         }
@@ -18171,6 +18195,8 @@ struct gguf_context * gguf_init_from_file(const char * fname, struct gguf_init_p
     // read the kv pairs
     {
         ctx->kv = malloc(ctx->header.n_kv * sizeof(struct gguf_kv));
+
+        printf("[INFO from project] %d\n", ctx->header.n_kv);
 
         for (uint64_t i = 0; i < ctx->header.n_kv; ++i) {
             struct gguf_kv * kv = &ctx->kv[i];
@@ -18214,13 +18240,16 @@ struct gguf_context * gguf_init_from_file(const char * fname, struct gguf_init_p
                             case GGUF_TYPE_BOOL:
                                 {
                                     kv->value.arr.data = malloc(kv->value.arr.n * GGUF_TYPE_SIZE[kv->value.arr.type]);
-                                    ok = ok && gguf_fread_el(file, kv->value.arr.data, kv->value.arr.n * GGUF_TYPE_SIZE[kv->value.arr.type], &offset);
+                                    // ok = ok && gguf_fread_el(file, kv->value.arr.data, kv->value.arr.n * GGUF_TYPE_SIZE[kv->value.arr.type], &offset);
+                                    ok = ok && gguf_fread_el_dummy(file, kv->value.arr.data, kv->value.arr.n * GGUF_TYPE_SIZE[kv->value.arr.type], &offset);
+                                    printf("[INFO from project] kv->value.arr.n: %llu\n", kv->value.arr.n);
                                 } break;
                             case GGUF_TYPE_STRING:
                                 {
                                     kv->value.arr.data = malloc(kv->value.arr.n * sizeof(struct gguf_str));
                                     for (uint64_t j = 0; j < kv->value.arr.n; ++j) {
-                                        ok = ok && gguf_fread_str(file, &((struct gguf_str *) kv->value.arr.data)[j], &offset);
+                                        // ok = ok && gguf_fread_str(file, &((struct gguf_str *) kv->value.arr.data)[j], &offset);
+                                        ok = ok && gguf_fread_str_dummy(file, &((struct gguf_str *) kv->value.arr.data)[j], &offset);
                                     }
                                 } break;
                             case GGUF_TYPE_ARRAY:

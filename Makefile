@@ -42,9 +42,10 @@ endif
 # Mac OS + Arm can report x86_64
 # ref: https://github.com/ggerganov/whisper.cpp/issues/66#issuecomment-1282546789
 ifeq ($(UNAME_S),Darwin)
-	ifndef LLAMA_NO_METAL
-		LLAMA_METAL := 1
-	endif
+	# ifndef LLAMA_NO_METAL
+	# 	LLAMA_METAL := 1
+	# endif
+	LLAMA_METAL := 0
 
 	ifneq ($(UNAME_P),arm)
 		SYSCTL_M := $(shell sysctl -n hw.optional.arm64 2>/dev/null)
@@ -56,9 +57,9 @@ ifeq ($(UNAME_S),Darwin)
 	endif
 endif
 
-ifneq '' '$(or $(filter clean,$(MAKECMDGOALS)),$(LLAMA_METAL))'
-BUILD_TARGETS += metal
-endif
+# ifneq '' '$(or $(filter clean,$(MAKECMDGOALS)),$(LLAMA_METAL))'
+# BUILD_TARGETS += metal
+# endif
 
 default: $(BUILD_TARGETS)
 
@@ -491,19 +492,19 @@ ggml-cuda.o: ggml-cuda.cu ggml-cuda.h
 	$(HIPCC) $(CXXFLAGS) $(HIPFLAGS) -x hip -c -o $@ $<
 endif # LLAMA_HIPBLAS
 
-ifdef LLAMA_METAL
-	MK_CPPFLAGS += -DGGML_USE_METAL
-	MK_LDFLAGS  += -framework Foundation -framework Metal -framework MetalKit
-	OBJS		+= ggml-metal.o
-ifdef LLAMA_METAL_NDEBUG
-	MK_CPPFLAGS += -DGGML_METAL_NDEBUG
-endif
-endif # LLAMA_METAL
+# ifdef LLAMA_METAL
+# 	MK_CPPFLAGS += -DGGML_USE_METAL
+# 	MK_LDFLAGS  += -framework Foundation -framework Metal -framework MetalKit
+# 	OBJS		+= ggml-metal.o
+# ifdef LLAMA_METAL_NDEBUG
+# 	MK_CPPFLAGS += -DGGML_METAL_NDEBUG
+# endif
+# endif # LLAMA_METAL
 
-ifdef LLAMA_METAL
-ggml-metal.o: ggml-metal.m ggml-metal.h
-	$(CC) $(CFLAGS) -c $< -o $@
-endif # LLAMA_METAL
+# ifdef LLAMA_METAL
+# ggml-metal.o: ggml-metal.m ggml-metal.h
+# 	$(CC) $(CFLAGS) -c $< -o $@
+# endif # LLAMA_METAL
 
 ifdef LLAMA_MPI
 ggml-mpi.o: ggml-mpi.c ggml-mpi.h
@@ -664,10 +665,10 @@ parallel: examples/parallel/parallel.cpp ggml.o llama.o $(COMMON_DEPS) $(OBJS)
 lookahead: examples/lookahead/lookahead.cpp ggml.o llama.o $(COMMON_DEPS) $(OBJS)
 	$(CXX) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
 
-ifdef LLAMA_METAL
-metal: examples/metal/metal.cpp ggml.o $(OBJS)
-	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
-endif
+# ifdef LLAMA_METAL
+# metal: examples/metal/metal.cpp ggml.o $(OBJS)
+# 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+# endif
 
 ifeq ($(UNAME_S),Darwin)
 swift: examples/batched.swift
